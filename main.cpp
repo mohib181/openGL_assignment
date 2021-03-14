@@ -6,17 +6,24 @@
 #include <glut.h>
 
 #define pi (2*acos(0.0))
+#define UP 1
+#define RIGHT 2
+#define LOOK 3
 
 double cameraHeight;
 double cameraAngle;
 int drawgrid;
 int drawaxes;
 double angle;
+double rotate_angle;
 
 struct point
 {
 	double x,y,z;
 };
+
+struct point pos;
+struct point u, r, l;
 
 
 void drawAxes()
@@ -147,7 +154,7 @@ void drawSphere(double radius,int slices,int stacks)
 	//draw quads using generated points
 	for(i=0;i<stacks;i++)
 	{
-        glColor3f((double)i/(double)stacks,(double)i/(double)stacks,(double)i/(double)stacks);
+        //glColor3f((double)i/(double)stacks,(double)i/(double)stacks,(double)i/(double)stacks);
 		for(j=0;j<slices;j++)
 		{
 			glBegin(GL_QUADS);{
@@ -166,17 +173,22 @@ void drawSphere(double radius,int slices,int stacks)
 	}
 }
 
+void drawCylinder(double radius, double height, int slices, int stacks) {
+
+}
 
 void drawSS()
 {
     glColor3f(1,0,0);
-    drawSquare(20);
+    //drawSquare(20);
+    drawSphere(20, 24, 20);
 
     glRotatef(angle,0,0,1);
     glTranslatef(110,0,0);
     glRotatef(2*angle,0,0,1);
     glColor3f(0,1,0);
-    drawSquare(15);
+    //drawSquare(15);
+    drawSphere(15, 24, 20);
 
     glPushMatrix();
     {
@@ -184,7 +196,8 @@ void drawSS()
         glTranslatef(60,0,0);
         glRotatef(2*angle,0,0,1);
         glColor3f(0,0,1);
-        drawSquare(10);
+        //drawSquare(10);
+        drawSphere(10, 24, 20);
     }
     glPopMatrix();
 
@@ -192,16 +205,100 @@ void drawSS()
     glTranslatef(40,0,0);
     glRotatef(4*angle,0,0,1);
     glColor3f(1,1,0);
-    drawSquare(5);
+    //drawSquare(5);
+    drawSphere(5, 24, 20);
+}
+
+void rotate_camera(struct point a, struct point b, double theta, bool clockwise, int dir){
+    struct point p, c;
+
+    if(clockwise) {
+        p.x = (a.y*b.z - a.z*b.y);
+        p.y = (a.z*b.x - a.x*b.z);
+        p.z = (a.x*b.y - a.y*b.x);
+    }
+    else {
+        p.x = (b.y*a.z - b.z*a.y);
+        p.y = (b.z*a.x - b.x*a.z);
+        p.z = (b.x*a.y - b.y*a.x);
+    }
+    //printf("perpendicular to a and b: p.x: %f, p.y: %f, p.z: %f\n", p.x, p.y, p.z);
+
+	c.x = a.x * cos(theta) + p.x * sin(theta);
+	c.y = a.y * cos(theta) + p.y * sin(theta);
+	c.z = a.z * cos(theta) + p.z * sin(theta);
+
+	double unit = sqrt(c.x*c.x + c.y*c.y + c.z*c.z);
+
+	if(dir == LOOK){
+        l.x = c.x/unit;
+        l.y = c.y/unit;
+        l.z = c.z/unit;
+        //printf("l: l.x: %f, l.y: %f, l.z: %f\n", l.x, l.y, l.z);
+	}
+	else if (dir == RIGHT) {
+        r.x = c.x/unit;
+        r.y = c.y/unit;
+        r.z = c.z/unit;
+        //printf("r: r.x: %f, r.y: %f, r.z: %f\n", r.x, r.y, r.z);
+	}
+	else {
+        u.x = c.x/unit;
+        u.y = c.y/unit;
+        u.z = c.z/unit;
+        //printf("u: u.x: %f, u.y: %f, u.z: %f\n", u.x, u.y, u.z);
+	}
+}
+
+void reset_pos() {
+    pos = {100, 100, 25};
+	u = {0, 0, 1};
+	r = {-1.0/sqrt(2), 1.0/sqrt(2), 0};
+	l = {-1.0/sqrt(2), -1.0/sqrt(2), 0};
 }
 
 void keyboardListener(unsigned char key, int x,int y){
 	switch(key){
 
 		case '1':
-			drawgrid=1-drawgrid;
+			//look left
+			//rotate counterclockwise l, r w.r.t u
+			rotate_camera(l, u, rotate_angle, false, LOOK);
+			rotate_camera(r, u, rotate_angle, false, RIGHT);
 			break;
-
+		case '2':
+			//look right
+			//rotate clockwise l, r w.r.t u
+			rotate_camera(l, u, rotate_angle, true, LOOK);
+			rotate_camera(r, u, rotate_angle, true, RIGHT);
+			break;
+		case '3':
+			//look up
+			//rotate counterclockwise l, u w.r.t r
+			rotate_camera(l, r, rotate_angle, false, LOOK);
+			rotate_camera(u, r, rotate_angle, false, UP);
+			break;
+		case '4':
+			//look down
+			//rotate clockwise l, u w.r.t r
+			rotate_camera(l, r, rotate_angle, true, LOOK);
+			rotate_camera(u, r, rotate_angle, true, UP);
+			break;
+		case '5':
+			//tilt clockwise
+			//rotate clockwise r, u w.r.t l
+			rotate_camera(r, l, rotate_angle, true, RIGHT);
+			rotate_camera(u, l, rotate_angle, true, UP);
+			break;
+		case '6':
+			//tilt counterclockwise
+			//rotate counterclockwise r, u w.r.t l
+			rotate_camera(r, l, rotate_angle, false, RIGHT);
+			rotate_camera(u, l, rotate_angle, false, UP);
+			break;
+        case '0':
+            reset_pos();
+            break;
 		default:
 			break;
 	}
@@ -211,22 +308,40 @@ void keyboardListener(unsigned char key, int x,int y){
 void specialKeyListener(int key, int x,int y){
 	switch(key){
 		case GLUT_KEY_DOWN:		//down arrow key
-			cameraHeight -= 3.0;
+			//cameraHeight -= 3.0;
+			pos.x += -l.x;
+			pos.y += -l.y;
+			pos.z += -l.z;
 			break;
-		case GLUT_KEY_UP:		// up arrow key
-			cameraHeight += 3.0;
+		case GLUT_KEY_UP:		//up arrow key
+			//cameraHeight += 3.0;
+			pos.x += l.x;
+			pos.y += l.y;
+			pos.z += l.z;
 			break;
 
 		case GLUT_KEY_RIGHT:
-			cameraAngle += 0.03;
+			//cameraAngle += 0.03;
+			pos.x += r.x;
+			pos.y += r.y;
+			pos.z += r.z;
 			break;
 		case GLUT_KEY_LEFT:
-			cameraAngle -= 0.03;
+			//cameraAngle -= 0.03;
+			pos.x += -r.x;
+			pos.y += -r.y;
+			pos.z += -r.z;
 			break;
 
 		case GLUT_KEY_PAGE_UP:
+			pos.x += u.x;
+			pos.y += u.y;
+			pos.z += u.z;
 			break;
 		case GLUT_KEY_PAGE_DOWN:
+			pos.x += -u.x;
+			pos.y += -u.y;
+			pos.z += -u.z;
 			break;
 
 		case GLUT_KEY_INSERT:
@@ -247,7 +362,7 @@ void mouseListener(int button, int state, int x, int y){	//x, y is the x-y of th
 	switch(button){
 		case GLUT_LEFT_BUTTON:
 			if(state == GLUT_DOWN){		// 2 times?? in ONE click? -- solution is checking DOWN or UP
-				drawaxes=1-drawaxes;
+				//drawaxes=1-drawaxes;
 			}
 			break;
 
@@ -289,7 +404,8 @@ void display(){
 
 	//gluLookAt(100,100,100,	0,0,0,	0,0,1);
 	//gluLookAt(200*cos(cameraAngle), 200*sin(cameraAngle), cameraHeight,		0,0,0,		0,0,1);
-	gluLookAt(0,0,200,	0,0,0,	0,1,0);
+	//gluLookAt(0,0,200,	0,0,0,	0,1,0);
+	gluLookAt(pos.x, pos.y, pos.z, pos.x+l.x, pos.y+l.y, pos.z+l.z, u.x, u.y, u.z);
 
 
 	//again select MODEL-VIEW
@@ -336,6 +452,12 @@ void init(){
 	cameraHeight=150.0;
 	cameraAngle=1.0;
 	angle=0;
+	rotate_angle=pi/12.0;
+
+	pos = {100, 100, 25};
+	u = {0, 0, 1};
+	r = {-1.0/sqrt(2), 1.0/sqrt(2), 0};
+	l = {-1.0/sqrt(2), -1.0/sqrt(2), 0};
 
 	//clear the screen
 	glClearColor(0,0,0,0);
