@@ -303,17 +303,58 @@ void drawCanonHead(double radius, int slices, int stacks)
 }
 
 void drawShootingLine() {
-	glPushMatrix();
+	struct point g = {gun_ls.x - gun_l.x, gun_ls.y-gun_l.y, gun_ls.z-gun_l.z};
+	double unit = sqrt(g.x*g.x + g.y*g.y + g.z*g.z);
+
+	g.x = g.x/unit;
+	g.y = g.y/unit;
+	g.z = g.z/unit;
+
+	/*glPushMatrix();
 	glColor3f(1, 0, 0);
 	glBegin(GL_LINES);{
 		glVertex3f(gun_l.x, gun_l.y, gun_l.z);
-		glVertex3f(gun_l.x*100, gun_l.y*100, gun_l.z*100);
+		glVertex3f(g.x*100, g.y*100, g.z*100);
+	}glEnd();
+	glPopMatrix();*/
+	double a = 10;
+
+	glPushMatrix();
+	glColor3f(0, 0, 1);
+	glTranslatef(gun_l.x, gun_l.y, gun_l.z);
+	glBegin(GL_QUADS);{
+		glVertex3f( a, 0, a);
+		glVertex3f( a, 0, -a);
+		glVertex3f(-a, 0, -a);
+		glVertex3f(-a, 0, a);
+	}glEnd();
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3f(1, 0, 0);
+	glTranslatef(gun_ls.x, gun_ls.y, gun_ls.z);
+	glBegin(GL_QUADS);{
+		glVertex3f( a, 0, a);
+		glVertex3f( a, 0, -a);
+		glVertex3f(-a, 0, -a);
+		glVertex3f(-a, 0, a);
 	}glEnd();
 	glPopMatrix();
 }
 
 void shoot() {
-	printf("gun_l: gun_l.x: %f, gun_l.y: %f, gun_l.z: %f\n", gun_l.x, gun_l.y, gun_l.z); 
+	printf("gun_ls - gunls: x: %f, y: %f, z: %f\n", gun_ls.x - gun_l.x, gun_ls.y-gun_l.y, gun_ls.z-gun_l.z); 
+	struct point g = {gun_ls.x - gun_l.x, gun_ls.y-gun_l.y, gun_ls.z-gun_l.z};
+	double unit = sqrt(g.x*g.x + g.y*g.y + g.z*g.z);
+
+	g.x = g.x/unit;
+	g.y = g.y/unit;
+	g.z = g.z/unit;
+
+	printf("g: g.x: %f, g.y: %f, g.z: %f\n", g.x, g.y, g.z);
+	
+
+
 	if(gun_l.y == 150) {
 		printf("hit\n");
 	}
@@ -390,7 +431,7 @@ void drawStuff() {
     glPopMatrix();
 }
 
-void rotate_vector_v2(struct point a, struct point b, double theta, int dir){
+void rotate_vector(struct point a, struct point b, double theta, int dir){
     struct point p, c;
 
     p.x = (b.y*a.z - b.z*a.y);
@@ -426,63 +467,16 @@ void rotate_vector_v2(struct point a, struct point b, double theta, int dir){
         //printf("u: u.x: %f, u.y: %f, u.z: %f\n", u.x, u.y, u.z);
 	}
 	else if (dir == GUN) {
-		gun_l.x = c.x/unit;
-        gun_l.y = c.y/unit;
-        gun_l.z = c.z/unit;
-		//printf("gun_l: gun_l.x: %f, gun_l.y: %f, gun_l.z: %f\n", gun_l.x, gun_l.y, gun_l.z); 
-	}
-}
-
-void rotate_vector(struct point a, struct point b, double theta, bool clockwise, int dir){
-    struct point p, c;
-
-    if(clockwise) {
-        p.x = (a.y*b.z - a.z*b.y);
-        p.y = (a.z*b.x - a.x*b.z);
-        p.z = (a.x*b.y - a.y*b.x);
-    }
-    else {
-        p.x = (b.y*a.z - b.z*a.y);
-        p.y = (b.z*a.x - b.x*a.z);
-        p.z = (b.x*a.y - b.y*a.x);
-    }
-    //printf("perpendicular to a and b: p.x: %f, p.y: %f, p.z: %f\n", p.x, p.y, p.z);
-
-	c.x = a.x * cos(theta) + p.x * sin(theta);
-	c.y = a.y * cos(theta) + p.y * sin(theta);
-	c.z = a.z * cos(theta) + p.z * sin(theta);
-
-	double unit = sqrt(c.x*c.x + c.y*c.y + c.z*c.z);
-
-	if(dir == LOOK){
-        l.x = c.x/unit;
-        l.y = c.y/unit;
-        l.z = c.z/unit;
-        //printf("l: l.x: %f, l.y: %f, l.z: %f\n", l.x, l.y, l.z);
-	}
-	else if (dir == RIGHT) {
-        r.x = c.x/unit;
-        r.y = c.y/unit;
-        r.z = c.z/unit;
-        //printf("r: r.x: %f, r.y: %f, r.z: %f\n", r.x, r.y, r.z);
-	}
-	else if (dir == UP) {
-        u.x = c.x/unit;
-        u.y = c.y/unit;
-        u.z = c.z/unit;
-        //printf("u: u.x: %f, u.y: %f, u.z: %f\n", u.x, u.y, u.z);
-	}
-	else if (dir == GUN) {
 		gun_l.x = c.x;
         gun_l.y = c.y;
         gun_l.z = c.z;
-		//printf("gun_l: gun_l.x: %f, gun_l.y: %f, gun_l.z: %f\n", gun_l.x, gun_l.y, gun_l.z); 
+		printf("gun_l: gun_l.x: %f, gun_l.y: %f, gun_l.z: %f\n", gun_l.x, gun_l.y, gun_l.z); 
 	}
 	else {
 		gun_ls.x = c.x;
         gun_ls.y = c.y;
         gun_ls.z = c.z;
-		//printf("gun_l: gun_l.x: %f, gun_l.y: %f, gun_l.z: %f\n", gun_l.x, gun_l.y, gun_l.z); 
+		printf("gun_ls: gun_ls.x: %f, gun_ls.y: %f, gun_ls.z: %f\n", gun_ls.x, gun_ls.y, gun_ls.z); 	
 	}
 }
 
@@ -505,102 +499,77 @@ void keyboardListener(unsigned char key, int x,int y){
 		case '1':
 			//look left
 			//rotate counterclockwise l, r w.r.t u
-			//rotate_vector(l, u, rotate_angle, false, LOOK);
-			//rotate_vector(r, u, rotate_angle, false, RIGHT);
-			
-			rotate_vector_v2(l, u, rotate_angle, LOOK);
-			rotate_vector_v2(r, u, rotate_angle, RIGHT);
+			rotate_vector(l, u, rotate_angle, LOOK);
+			rotate_vector(r, u, rotate_angle, RIGHT);
 			break;
 		case '2':
 			//look right
 			//rotate clockwise l, r w.r.t u
-			//rotate_vector(l, u, rotate_angle, true, LOOK);
-			//rotate_vector(r, u, rotate_angle, true, RIGHT);
-			rotate_vector_v2(l, u, -rotate_angle, LOOK);
-			rotate_vector_v2(r, u, -rotate_angle, RIGHT);
+			rotate_vector(l, u, -rotate_angle, LOOK);
+			rotate_vector(r, u, -rotate_angle, RIGHT);
 			break;
 		case '3':
 			//look up
 			//rotate counterclockwise l, u w.r.t r
-			//rotate_vector(l, r, rotate_angle, false, LOOK);
-			//rotate_vector(u, r, rotate_angle, false, UP);
-			rotate_vector_v2(l, r, rotate_angle, LOOK);
-			rotate_vector_v2(u, r, rotate_angle, UP);
+			rotate_vector(l, r, rotate_angle, LOOK);
+			rotate_vector(u, r, rotate_angle, UP);
 			break;
 		case '4':
 			//look down
 			//rotate clockwise l, u w.r.t r
-			//rotate_vector(l, r, rotate_angle, true, LOOK);
-			//rotate_vector(u, r, rotate_angle, true, UP);
-			rotate_vector_v2(l, r, -rotate_angle, LOOK);
-			rotate_vector_v2(u, r, -rotate_angle, UP);
+			rotate_vector(l, r, -rotate_angle, LOOK);
+			rotate_vector(u, r, -rotate_angle, UP);
 			break;
 		case '5':
 			//tilt clockwise
 			//rotate clockwise r, u w.r.t l
-			//rotate_vector(r, l, rotate_angle, true, RIGHT);
-			//rotate_vector(u, l, rotate_angle, true, UP);
-			rotate_vector_v2(r, l, -rotate_angle, RIGHT);
-			rotate_vector_v2(u, l, -rotate_angle, UP);
+			rotate_vector(r, l, -rotate_angle, RIGHT);
+			rotate_vector(u, l, -rotate_angle, UP);
 			break;
 		case '6':
 			//tilt counterclockwise
 			//rotate counterclockwise r, u w.r.t l
-			//rotate_vector(r, l, rotate_angle, false, RIGHT);
-			//rotate_vector(u, l, rotate_angle, false, UP);
-			rotate_vector_v2(r, l, rotate_angle, RIGHT);
-			rotate_vector_v2(u, l, rotate_angle, UP);
+			rotate_vector(r, l, rotate_angle, RIGHT);
+			rotate_vector(u, l, rotate_angle, UP);
 			break;
         
 		case 'q':
 			if(q_angle+angle_inc < 60) {
 				q_angle += angle_inc;
-				rotate_vector_v2(gun_l, {0, 0, 1}, angle_inc, GUN);
+				rotate_vector(gun_l, {0, 0, 1}, angle_inc, GUN);
+				//rotate_vector(gun_ls, {0, 0, 1}, angle_inc, 10);
 			}
-            //q_angle = q_angle+angle_inc > 60 ? q_angle : q_angle+angle_inc;
-            //rotate_vector(gun_l, {0, 0, 1}, angle_inc, false, GUN);
-			//rotate_vector(gun_ls, {0, 0, 1}, angle_inc, false, GUN+1);
-			break;
+            break;
         case 'w':
 			if (q_angle-angle_inc > -60) {
 				q_angle -= angle_inc;
-				rotate_vector_v2(gun_l, {0, 0, 1}, -angle_inc, GUN);
+				rotate_vector(gun_l, {0, 0, 1}, -angle_inc, GUN);
+				//rotate_vector(gun_ls, {0, 0, 1}, -angle_inc, 10);
 			}
-            //q_angle = q_angle-angle_inc < -60 ? q_angle : q_angle-angle_inc;
-            //rotate_vector(gun_l, {0, 0, 1}, angle_inc, true, GUN);
-			//rotate_vector(gun_ls, {0, 0, 1}, angle_inc, true, GUN+1);
-			break;
+            break;
         case 'e':
             if (e_angle+angle_inc < 50) {
 				e_angle += angle_inc;
-				rotate_vector_v2(gun_l, {1, 0, 0}, angle_inc, GUN);
+				rotate_vector(gun_l, {1, 0, 0}, angle_inc, GUN);
 			}
-			//rotate_vector(gun_l, {1, 0, 0}, angle_inc, false, GUN);
-			//rotate_vector(gun_ls, {1, 0, 0}, angle_inc, false, GUN+1);
 			break;
         case 'r':
             if (e_angle-angle_inc > -50) {
 				e_angle -= angle_inc;
-				rotate_vector_v2(gun_l, {1, 0, 0}, -angle_inc, GUN);
+				rotate_vector(gun_l, {1, 0, 0}, -angle_inc, GUN);
 			}
-			//rotate_vector(gun_l, {1, 0, 0}, angle_inc, true, GUN);
-			//rotate_vector(gun_ls, {1, 0, 0}, angle_inc, true, GUN+1);
 			break;
         case 'a':
             if (a_angle+angle_inc < 50) {
 				a_angle += angle_inc;
-				rotate_vector_v2(gun_l, {1, 0, 0}, angle_inc, GUN);
+				rotate_vector(gun_l, {1, 0, 0}, angle_inc, GUN);
 			}
-			//rotate_vector(gun_l, {1, 0, 0}, angle_inc, false, GUN);
-			//rotate_vector(gun_ls, {1, 0, 0}, angle_inc, false, GUN+1);
 			break;
         case 's':
             if (a_angle-angle_inc > -50) {
 				a_angle -= angle_inc;
-				rotate_vector_v2(gun_l, {1, 0, 0}, -angle_inc, GUN);
+				rotate_vector(gun_l, {1, 0, 0}, -angle_inc, GUN);
 			}
-			//rotate_vector(gun_l, {1, 0, 0}, angle_inc, true, GUN);
-			//rotate_vector(gun_ls, {1, 0, 0}, angle_inc, true, GUN+1);
 			break;
         case 'd':
             d_angle = d_angle+angle_inc > 60 ? d_angle : d_angle+angle_inc;
@@ -776,7 +745,7 @@ void init(){
 
 	gun_u = {0, 0, 1};
 	gun_r = {1, 0, 0};
-	gun_l = {0, 1, 0};
+	gun_l = {0, 40, 0};
 	gun_ls = {0, 170, 0};
 
 	q_angle = 0;
