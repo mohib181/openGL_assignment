@@ -9,6 +9,7 @@
 #define UP 1
 #define RIGHT 2
 #define LOOK 3
+#define GUN 4
 
 double cameraHeight;
 double cameraAngle;
@@ -29,7 +30,7 @@ struct point
 
 struct point pos;
 struct point u, r, l;
-struct point gun_u, gun_r, gun_l;
+struct point gun_u, gun_r, gun_l, gun_ls;
 
 
 void drawAxes()
@@ -139,7 +140,6 @@ void drawCone(double radius,double height,int segments)
     }
 }
 
-
 void drawSphere(double radius,int slices,int stacks)
 {
 	struct point points[100][100];
@@ -186,7 +186,7 @@ void drawSphere(double radius,int slices,int stacks)
 	}
 }
 
-void drawHalfSphere(double radius, int slices, int stacks)
+void drawHalfSphere(double radius, int slices, int stacks, bool dir)
 {
 	struct point points[100][100];
 	int i,j;
@@ -212,16 +212,19 @@ void drawHalfSphere(double radius, int slices, int stacks)
             else glColor3f(1, 1, 1);
 
 			glBegin(GL_QUADS);{
-			    //upper hemisphere
-			    //glVertex3f(points[i][j].x,points[i][j].y,points[i][j].z);
-				//glVertex3f(points[i][j+1].x,points[i][j+1].y,points[i][j+1].z);
-				//glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,points[i+1][j+1].z);
-				//glVertex3f(points[i+1][j].x,points[i+1][j].y,points[i+1][j].z);
-                //lower hemisphere
-                glVertex3f(points[i][j].x,-points[i][j].y,points[i][j].z);
-				glVertex3f(points[i][j+1].x,-points[i][j+1].y,points[i][j+1].z);
-				glVertex3f(points[i+1][j+1].x,-points[i+1][j+1].y,points[i+1][j+1].z);
-				glVertex3f(points[i+1][j].x,-points[i+1][j].y,points[i+1][j].z);
+			    if(dir) {
+					//upper hemisphere
+			    	glVertex3f(points[i][j].x,points[i][j].y,points[i][j].z);
+					glVertex3f(points[i][j+1].x,points[i][j+1].y,points[i][j+1].z);
+					glVertex3f(points[i+1][j+1].x,points[i+1][j+1].y,points[i+1][j+1].z);
+					glVertex3f(points[i+1][j].x,points[i+1][j].y,points[i+1][j].z);
+				}else {
+					//lower hemisphere
+					glVertex3f(points[i][j].x,-points[i][j].y,points[i][j].z);
+					glVertex3f(points[i][j+1].x,-points[i][j+1].y,points[i][j+1].z);
+					glVertex3f(points[i+1][j+1].x,-points[i+1][j+1].y,points[i+1][j+1].z);
+					glVertex3f(points[i+1][j].x,-points[i+1][j].y,points[i+1][j].z);
+				}
 			}glEnd();
 		}
 	}
@@ -299,14 +302,24 @@ void drawCanonHead(double radius, int slices, int stacks)
 	}
 }
 
-void drawPane(double d, double len) {
-    glPushMatrix();
+void drawShootingLine() {
+	glPushMatrix();
+	glColor3f(1, 0, 0);
+	glBegin(GL_LINES);{
+		glVertex3f(gun_l.x, gun_l.y, gun_l.z);
+		glVertex3f(gun_l.x*100, gun_l.y*100, gun_l.z*100);
+	}glEnd();
+	glPopMatrix();
+}
 
-    glTranslatef(0, d, 0);
-    glColor3f(0.5, 0.5, 0.5);
-    drawSquare(len);
-
-    glPopMatrix();
+void shoot() {
+	printf("gun_l: gun_l.x: %f, gun_l.y: %f, gun_l.z: %f\n", gun_l.x, gun_l.y, gun_l.z); 
+	if(gun_l.y == 150) {
+		printf("hit\n");
+	}
+	else {
+		printf("miss\n");
+	}
 }
 
 void drawSS()
@@ -342,29 +355,85 @@ void drawSS()
 }
 
 void drawStuff() {
-    //glPushMatrix();
+    glPushMatrix();
 
     glRotatef(q_angle, 0, 0, 1);
-    glRotatef(e_angle, 1, 0, 0);
+    //drawHalfSphere(40, 40, 40, false);
+    
+	glRotatef(e_angle, 1, 0, 0);
 
     drawSphere(40, 40, 40);
+    //drawHalfSphere(40, 40, 40, true);
     
 	glTranslatef(0, 40, 0);
     glRotatef(a_angle, 1, 0, 0);
     glRotatef(d_angle, 0, 1, 0);
     
 	glTranslatef(0, 10, 0);
-	drawHalfSphere(10, 40, 40);
+	drawHalfSphere(10, 40, 40, false);
     drawCylinder(10, 40, 100);
 
     glTranslatef(0, 100, 0);
-    drawCanonHead(10, 40, 30);
+    drawCanonHead(10, 40, 20);
 
-    //glPopMatrix();
-    drawPane(500, 120);
+    glPopMatrix();
+    
+	//total stuff 170 unit
+	drawShootingLine();
+
+	glPushMatrix();
+
+    glTranslatef(0, 300, 0);
+    glColor3f(0.5, 0.5, 0.5);
+    drawSquare(200);
+
+    glPopMatrix();
 }
 
-void rotate_camera(struct point a, struct point b, double theta, bool clockwise, int dir){
+void rotate_vector_v2(struct point a, struct point b, double theta, int dir){
+    struct point p, c;
+
+    p.x = (b.y*a.z - b.z*a.y);
+    p.y = (b.z*a.x - b.x*a.z);
+    p.z = (b.x*a.y - b.y*a.x);
+    //printf("perpendicular to a and b: p.x: %f, p.y: %f, p.z: %f\n", p.x, p.y, p.z);
+
+	double dot = a.x*b.x + a.y*b.y + a.z*b.z;
+
+	c.x = a.x * cos(theta) + p.x * sin(theta) + b.x * dot * (1 - cos(theta));
+	c.y = a.y * cos(theta) + p.y * sin(theta) + b.y * dot * (1 - cos(theta));
+	c.z = a.z * cos(theta) + p.z * sin(theta) + b.z * dot * (1 - cos(theta));
+
+	double unit = sqrt(c.x*c.x + c.y*c.y + c.z*c.z);
+	//unit = 1;
+
+	if(dir == LOOK){
+        l.x = c.x/unit;
+        l.y = c.y/unit;
+        l.z = c.z/unit;
+        //printf("l: l.x: %f, l.y: %f, l.z: %f\n", l.x, l.y, l.z);
+	}
+	else if (dir == RIGHT) {
+        r.x = c.x/unit;
+        r.y = c.y/unit;
+        r.z = c.z/unit;
+        //printf("r: r.x: %f, r.y: %f, r.z: %f\n", r.x, r.y, r.z);
+	}
+	else if (dir == UP) {
+        u.x = c.x/unit;
+        u.y = c.y/unit;
+        u.z = c.z/unit;
+        //printf("u: u.x: %f, u.y: %f, u.z: %f\n", u.x, u.y, u.z);
+	}
+	else if (dir == GUN) {
+		gun_l.x = c.x/unit;
+        gun_l.y = c.y/unit;
+        gun_l.z = c.z/unit;
+		//printf("gun_l: gun_l.x: %f, gun_l.y: %f, gun_l.z: %f\n", gun_l.x, gun_l.y, gun_l.z); 
+	}
+}
+
+void rotate_vector(struct point a, struct point b, double theta, bool clockwise, int dir){
     struct point p, c;
 
     if(clockwise) {
@@ -397,11 +466,23 @@ void rotate_camera(struct point a, struct point b, double theta, bool clockwise,
         r.z = c.z/unit;
         //printf("r: r.x: %f, r.y: %f, r.z: %f\n", r.x, r.y, r.z);
 	}
-	else {
+	else if (dir == UP) {
         u.x = c.x/unit;
         u.y = c.y/unit;
         u.z = c.z/unit;
         //printf("u: u.x: %f, u.y: %f, u.z: %f\n", u.x, u.y, u.z);
+	}
+	else if (dir == GUN) {
+		gun_l.x = c.x;
+        gun_l.y = c.y;
+        gun_l.z = c.z;
+		//printf("gun_l: gun_l.x: %f, gun_l.y: %f, gun_l.z: %f\n", gun_l.x, gun_l.y, gun_l.z); 
+	}
+	else {
+		gun_ls.x = c.x;
+        gun_ls.y = c.y;
+        gun_ls.z = c.z;
+		//printf("gun_l: gun_l.x: %f, gun_l.y: %f, gun_l.z: %f\n", gun_l.x, gun_l.y, gun_l.z); 
 	}
 }
 
@@ -410,6 +491,12 @@ void reset_pos() {
 	u = {0, 0, 1};
 	r = {-1.0/sqrt(2), 1.0/sqrt(2), 0};
 	l = {-1.0/sqrt(2), -1.0/sqrt(2), 0};
+
+	gun_l = {0, 1, 0};
+	q_angle = 0;
+	e_angle = 0;
+	a_angle = 0;
+	d_angle = 0;
 }
 
 void keyboardListener(unsigned char key, int x,int y){
@@ -418,66 +505,114 @@ void keyboardListener(unsigned char key, int x,int y){
 		case '1':
 			//look left
 			//rotate counterclockwise l, r w.r.t u
-			rotate_camera(l, u, rotate_angle, false, LOOK);
-			rotate_camera(r, u, rotate_angle, false, RIGHT);
+			//rotate_vector(l, u, rotate_angle, false, LOOK);
+			//rotate_vector(r, u, rotate_angle, false, RIGHT);
+			
+			rotate_vector_v2(l, u, rotate_angle, LOOK);
+			rotate_vector_v2(r, u, rotate_angle, RIGHT);
 			break;
 		case '2':
 			//look right
 			//rotate clockwise l, r w.r.t u
-			rotate_camera(l, u, rotate_angle, true, LOOK);
-			rotate_camera(r, u, rotate_angle, true, RIGHT);
+			//rotate_vector(l, u, rotate_angle, true, LOOK);
+			//rotate_vector(r, u, rotate_angle, true, RIGHT);
+			rotate_vector_v2(l, u, -rotate_angle, LOOK);
+			rotate_vector_v2(r, u, -rotate_angle, RIGHT);
 			break;
 		case '3':
 			//look up
 			//rotate counterclockwise l, u w.r.t r
-			rotate_camera(l, r, rotate_angle, false, LOOK);
-			rotate_camera(u, r, rotate_angle, false, UP);
+			//rotate_vector(l, r, rotate_angle, false, LOOK);
+			//rotate_vector(u, r, rotate_angle, false, UP);
+			rotate_vector_v2(l, r, rotate_angle, LOOK);
+			rotate_vector_v2(u, r, rotate_angle, UP);
 			break;
 		case '4':
 			//look down
 			//rotate clockwise l, u w.r.t r
-			rotate_camera(l, r, rotate_angle, true, LOOK);
-			rotate_camera(u, r, rotate_angle, true, UP);
+			//rotate_vector(l, r, rotate_angle, true, LOOK);
+			//rotate_vector(u, r, rotate_angle, true, UP);
+			rotate_vector_v2(l, r, -rotate_angle, LOOK);
+			rotate_vector_v2(u, r, -rotate_angle, UP);
 			break;
 		case '5':
 			//tilt clockwise
 			//rotate clockwise r, u w.r.t l
-			rotate_camera(r, l, rotate_angle, true, RIGHT);
-			rotate_camera(u, l, rotate_angle, true, UP);
+			//rotate_vector(r, l, rotate_angle, true, RIGHT);
+			//rotate_vector(u, l, rotate_angle, true, UP);
+			rotate_vector_v2(r, l, -rotate_angle, RIGHT);
+			rotate_vector_v2(u, l, -rotate_angle, UP);
 			break;
 		case '6':
 			//tilt counterclockwise
 			//rotate counterclockwise r, u w.r.t l
-			rotate_camera(r, l, rotate_angle, false, RIGHT);
-			rotate_camera(u, l, rotate_angle, false, UP);
+			//rotate_vector(r, l, rotate_angle, false, RIGHT);
+			//rotate_vector(u, l, rotate_angle, false, UP);
+			rotate_vector_v2(r, l, rotate_angle, RIGHT);
+			rotate_vector_v2(u, l, rotate_angle, UP);
 			break;
-        case 'q':
-            q_angle = q_angle+angle_inc > 50 ? q_angle : q_angle+angle_inc;
-            break;
+        
+		case 'q':
+			if(q_angle+angle_inc < 60) {
+				q_angle += angle_inc;
+				rotate_vector_v2(gun_l, {0, 0, 1}, angle_inc, GUN);
+			}
+            //q_angle = q_angle+angle_inc > 60 ? q_angle : q_angle+angle_inc;
+            //rotate_vector(gun_l, {0, 0, 1}, angle_inc, false, GUN);
+			//rotate_vector(gun_ls, {0, 0, 1}, angle_inc, false, GUN+1);
+			break;
         case 'w':
-            q_angle = q_angle-angle_inc < -50 ? q_angle : q_angle-angle_inc;
-            break;
+			if (q_angle-angle_inc > -60) {
+				q_angle -= angle_inc;
+				rotate_vector_v2(gun_l, {0, 0, 1}, -angle_inc, GUN);
+			}
+            //q_angle = q_angle-angle_inc < -60 ? q_angle : q_angle-angle_inc;
+            //rotate_vector(gun_l, {0, 0, 1}, angle_inc, true, GUN);
+			//rotate_vector(gun_ls, {0, 0, 1}, angle_inc, true, GUN+1);
+			break;
         case 'e':
-            e_angle = e_angle+angle_inc > 50 ? e_angle : e_angle+angle_inc;
-            break;
+            if (e_angle+angle_inc < 50) {
+				e_angle += angle_inc;
+				rotate_vector_v2(gun_l, {1, 0, 0}, angle_inc, GUN);
+			}
+			//rotate_vector(gun_l, {1, 0, 0}, angle_inc, false, GUN);
+			//rotate_vector(gun_ls, {1, 0, 0}, angle_inc, false, GUN+1);
+			break;
         case 'r':
-            e_angle = e_angle-angle_inc < -50 ? e_angle : e_angle-angle_inc;
-            break;
+            if (e_angle-angle_inc > -50) {
+				e_angle -= angle_inc;
+				rotate_vector_v2(gun_l, {1, 0, 0}, -angle_inc, GUN);
+			}
+			//rotate_vector(gun_l, {1, 0, 0}, angle_inc, true, GUN);
+			//rotate_vector(gun_ls, {1, 0, 0}, angle_inc, true, GUN+1);
+			break;
         case 'a':
-            a_angle = a_angle+angle_inc > 50 ? a_angle : a_angle+angle_inc;
-            break;
+            if (a_angle+angle_inc < 50) {
+				a_angle += angle_inc;
+				rotate_vector_v2(gun_l, {1, 0, 0}, angle_inc, GUN);
+			}
+			//rotate_vector(gun_l, {1, 0, 0}, angle_inc, false, GUN);
+			//rotate_vector(gun_ls, {1, 0, 0}, angle_inc, false, GUN+1);
+			break;
         case 's':
-            a_angle = a_angle-angle_inc < -50 ? a_angle : a_angle-angle_inc;
-            break;
+            if (a_angle-angle_inc > -50) {
+				a_angle -= angle_inc;
+				rotate_vector_v2(gun_l, {1, 0, 0}, -angle_inc, GUN);
+			}
+			//rotate_vector(gun_l, {1, 0, 0}, angle_inc, true, GUN);
+			//rotate_vector(gun_ls, {1, 0, 0}, angle_inc, true, GUN+1);
+			break;
         case 'd':
-            d_angle = d_angle+angle_inc > 50 ? d_angle : d_angle+angle_inc;
+            d_angle = d_angle+angle_inc > 60 ? d_angle : d_angle+angle_inc;
             break;
         case 'f':
-            d_angle = d_angle-angle_inc < -50 ? d_angle : d_angle-angle_inc;
+            d_angle = d_angle-angle_inc < -60 ? d_angle : d_angle-angle_inc;
             break;
-        case '0':
+        
+		case '0':
             reset_pos();
             break;
+		
 		default:
 			break;
 	}
@@ -487,26 +622,22 @@ void keyboardListener(unsigned char key, int x,int y){
 void specialKeyListener(int key, int x,int y){
 	switch(key){
 		case GLUT_KEY_DOWN:		//down arrow key
-			//cameraHeight -= 3.0;
 			pos.x += -l.x;
 			pos.y += -l.y;
 			pos.z += -l.z;
 			break;
 		case GLUT_KEY_UP:		//up arrow key
-			//cameraHeight += 3.0;
 			pos.x += l.x;
 			pos.y += l.y;
 			pos.z += l.z;
 			break;
 
-		case GLUT_KEY_RIGHT:
-			//cameraAngle += 0.03;
+		case GLUT_KEY_RIGHT:	//right arrow key
 			pos.x += r.x;
 			pos.y += r.y;
 			pos.z += r.z;
 			break;
-		case GLUT_KEY_LEFT:
-			//cameraAngle -= 0.03;
+		case GLUT_KEY_LEFT:		//left arrow key
 			pos.x += -r.x;
 			pos.y += -r.y;
 			pos.z += -r.z;
@@ -541,12 +672,15 @@ void mouseListener(int button, int state, int x, int y){	//x, y is the x-y of th
 	switch(button){
 		case GLUT_LEFT_BUTTON:
 			if(state == GLUT_DOWN){		// 2 times?? in ONE click? -- solution is checking DOWN or UP
-				//drawaxes=1-drawaxes;
+				drawaxes=1-drawaxes;
 			}
 			break;
 
 		case GLUT_RIGHT_BUTTON:
 			//........
+			if(state == GLUT_DOWN){		// 2 times?? in ONE click? -- solution is checking DOWN or UP
+				shoot();
+			}
 			break;
 
 		case GLUT_MIDDLE_BUTTON:
@@ -635,7 +769,7 @@ void init(){
 	rotate_angle=pi/10.0;
 	angle_inc = 5;
 
-	pos = {40, 40, 0};
+	pos = {100, 100, 50};
 	u = {0, 0, 1};
 	r = {-1.0/sqrt(2), 1.0/sqrt(2), 0};
 	l = {-1.0/sqrt(2), -1.0/sqrt(2), 0};
@@ -643,6 +777,7 @@ void init(){
 	gun_u = {0, 0, 1};
 	gun_r = {1, 0, 0};
 	gun_l = {0, 1, 0};
+	gun_ls = {0, 170, 0};
 
 	q_angle = 0;
 	e_angle = 0;
