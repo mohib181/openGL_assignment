@@ -14,7 +14,11 @@ int drawgrid;
 int drawaxes;
 double angle;
 
+int total_circles;
+int drawn_circles;
 bool play;
+
+clock_t current_time;
 
 struct point
 {
@@ -25,6 +29,8 @@ struct point
 double speed;
 struct point positions[5];
 struct point velocity[5];
+int trapped[5];
+int intertwined[5][5];
 
 struct point position;
 struct point v;
@@ -184,7 +190,7 @@ void drawSphere(double radius,int slices,int stacks)
 }
 
 void updatePositions() {
-	for (int i = 0; i < 5; i++) {
+	for (int i = 0; i < drawn_circles; i++) {
 		positions[i].x += velocity[i].x * speed;
 		positions[i].y += velocity[i].y * speed;
 		positions[i].z += velocity[i].z * speed;
@@ -193,7 +199,7 @@ void updatePositions() {
 }
 
 void boundaryCheckSqaure() {
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < drawn_circles; i++)
 	{
 		if(positions[i].x >= 90 || positions[i].x <= -90) {
 			//printf("%d hit x axis", i);
@@ -208,58 +214,100 @@ void boundaryCheckSqaure() {
 
 bool checkInsideCircle(struct point c) {
 	double d = sqrt(c.x*c.x + c.y*c.y);
-	if (d <= 60) return true;
+	if (d <= 59) return true;
+	return false;
+}
+
+bool hitCircle(struct point c) {
+	double d = sqrt(c.x*c.x + c.y*c.y);
+	if (d > 59 && d <= 60) return true;
 	return false;
 }
 
 void circleCollisionDetect() 
 {
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < drawn_circles; i++)
 	{
-		for (int j = i+1; j < 5; j++)
+		for (int j = i+1; j < drawn_circles; j++)
 		{
-			if(checkInsideCircle(positions[i]) && checkInsideCircle(positions[j])) {
+			if(trapped[i] && trapped[j]) {
 				double d = sqrt((positions[i].x-positions[j].x)*(positions[i].x-positions[j].x) + (positions[i].y-positions[j].y)*(positions[i].y-positions[j].y));
 				if (d <= 20)
 				{
 					//printf("d: %f\n", d);
 					play = !play;
+					//printf("before %d: vx, vy: %f, %f\n", i, velocity[i].x, velocity[i].y);
+					//printf("before %d: vx, vy: %f, %f\n", j, velocity[j].x, velocity[j].y);
 					
 					struct point c = {positions[i].x - positions[j].x, positions[i].y - positions[j].y, 0};
 					double unit = sqrt(c.x*c.x + c.y*c.y + c.z*c.z);
 					
-					velocity[i].x += c.x/unit;
-					velocity[i].y += c.y/unit;
+					velocity[i].x = c.x/unit;
+					velocity[i].y = c.y/unit;
 
-					unit = sqrt(velocity[i].x*velocity[i].x + velocity[i].y*velocity[i].y + velocity[i].z*velocity[i].z);
+					velocity[j].x = -c.x/unit;
+					velocity[j].y = -c.y/unit;
+
+					//printf("after: %d vx, vy: %f, %f\n", i, velocity[i].x, velocity[i].y);
+					//printf("after: %d: vx, vy: %f, %f\n", j, velocity[j].x, velocity[j].y);
 					
-					velocity[i].x /= unit;
-					velocity[i].y /= unit;
-
-
-					velocity[j].x += -c.x/unit;
-					velocity[j].y += -c.y/unit;
-					
-					unit = sqrt(velocity[j].x*velocity[j].x + velocity[j].y*velocity[j].y + velocity[j].z*velocity[j].z);
-					
-					velocity[j].x /= unit;
-					velocity[j].y /= unit;
-
-					//play = !play;
+					play = !play;
 				}
 			}	
 		}
 	}
 }
 
-void boundaryCheckCircle() {
-	for (int i = 0; i < 5; i++)
+void updateIntertwinedStatus()
+{
+	for (int i = 0; i < drawn_circles; i++)
 	{
-		if (checkInsideCircle(positions[i]))
+		for (int j = i+1; j < drawn_circles; j++)
 		{
-			//printf("%d is in circle\n", i);
+			double d = sqrt((positions[i].x-positions[j].x)*(positions[i].x-positions[j].x) + (positions[i].y-positions[j].y)*(positions[i].y-positions[j].y));
+			if (d <= 20)
+			{	
+				intertwined[i][j] = 1;
+				intertwined[j][i] = 1;
+				printf("%d and %d are intertwined\n", i, j);
+			}
+			else
+			{
+				intertwined[i][j] = 0;
+				intertwined[j][i] = 0;
+			}
 		}
+	}
+}
+
+void updateCircleStatus() {
+	for (int i = 0; i < drawn_circles; i++)
+	{
+		double d = sqrt(positions[i].x*positions[i].x + positions[i].y*positions[i].y);
+		if (d < 58) trapped[i] = 1;
+	}
+	
+}
+
+void boundaryCheckCircle() {
+	for (int i = 0; i < drawn_circles; i++)
+	{
+		//if (trapped[i] != 1 && checkInsideCircle(positions[i])) trapped[i] = 1;
 		
+		if (hitCircle(positions[i]) && trapped[i])
+		{
+			//printf("%d hit circle\n", i);
+			double dot = velocity[i].x*positions[i].x + velocity[i].y*positions[i].y;
+
+			double vx = velocity[i].x - 2*dot*positions[i].x;
+			double vy = velocity[i].y - 2*dot*positions[i].y;
+			double unit = sqrt(vx*vx + vy*vy);
+			vx /= unit;
+			vy /= unit;
+
+			velocity[i].x = vx;
+			velocity[i].y = vy;
+		}
 	}
 	
 }
@@ -281,7 +329,7 @@ void drawTask2() {
 	glColor3f(1,0,0);
 	drawCircle(70, 60);
 
-	for (int i = 0; i < 5; i++)
+	for (int i = 0; i < drawn_circles; i++)
 	{
 		drawMovingCircle(positions[i], 10);
 	}
@@ -336,13 +384,13 @@ void keyboardListener(unsigned char key, int x,int y){
 void specialKeyListener(int key, int x,int y){
 	switch(key){
 		case GLUT_KEY_DOWN:		//down arrow key
-			if(speed != 1) {
-				speed--;
+			if(speed > 0.001) {
+				speed -= 0.001;
 			}
 			break;
 		case GLUT_KEY_UP:		// up arrow key
-			if(speed != 20) {
-				speed++;
+			if(speed < 0.05) {
+				speed += 0.001;
 			}
 			break;
 
@@ -375,9 +423,7 @@ void specialKeyListener(int key, int x,int y){
 void mouseListener(int button, int state, int x, int y){	//x, y is the x-y of the screen (2D)
 	switch(button){
 		case GLUT_LEFT_BUTTON:
-			if(state == GLUT_DOWN){		// 2 times?? in ONE click? -- solution is checking DOWN or UP
-				drawaxes=1-drawaxes;
-			}
+			
 			break;
 
 		case GLUT_RIGHT_BUTTON:
@@ -455,12 +501,20 @@ void display(){
 void animate(){
 	angle+=0.05;
 
+	if (drawn_circles != total_circles) {
+		if(clock() - current_time > 500) {
+			current_time = clock();
+			drawn_circles++;
+		}
+	}
 	if(play) 
 	{
 		updatePositions();
+		updateCircleStatus();
+		//updateIntertwinedStatus();
 		boundaryCheckSqaure();
 		boundaryCheckCircle();
-		//circleCollisionDetect();
+		circleCollisionDetect();
 	}
 
 	//codes for any changes in Models, Camera
@@ -474,13 +528,34 @@ void init(){
 	cameraHeight=150.0;
 	cameraAngle=1.0;
 	angle=0;
-	speed=2;
-	play = true;
 	
-	for (int i = 0; i < 5; i++)
+	speed=0.002;
+	play = true;
+	total_circles = 5;
+	drawn_circles = 1;
+
+	current_time = clock();
+
+	srand(time(0));
+	
+	for (int i = 0; i < total_circles; i++)
 	{
+		trapped[i] = 0;
 		positions[i] = {-85, -85, 0};
-		velocity[i] = {(rand()%6)/3000.0, (rand()%5)/3000.0, 0};
+		double vx = rand()%100;
+		double vy = rand()%100;
+		double unit = sqrt(vx*vx + vy*vy);
+		vx /= unit;
+		vy /= unit;
+		printf("vx, vy: %f, %f\n", vx, vy);
+
+		velocity[i] = {vx, vy, 0};
+
+		for (int j = 0; j < total_circles; j++)
+		{
+			intertwined[i][j] = 0;
+		}
+		
 	}
 	
 

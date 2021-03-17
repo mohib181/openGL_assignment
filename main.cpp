@@ -395,7 +395,7 @@ void drawStuff() {
     glPopMatrix();
     
 	//total stuff 170 unit
-	//drawShootingLine();
+	drawShootingLine();
 
 	glPushMatrix();
 
@@ -720,7 +720,7 @@ void init(){
 	d_angle = 0;
 
 	bullet_count = 0;
-	max_bullets = 10;
+	max_bullets = 25;
 
 
 	//clear the screen
