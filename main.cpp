@@ -16,6 +16,7 @@ double cameraAngle;
 int drawgrid;
 int drawaxes;
 double angle;
+
 double rotate_angle;
 double q_angle;
 double e_angle;
@@ -54,7 +55,6 @@ void drawAxes()
 	}
 }
 
-
 void drawGrid()
 {
 	int i;
@@ -89,7 +89,6 @@ void drawSquare(double a)
 		glVertex3f(-a, 0, a);
 	}glEnd();
 }
-
 
 void drawCircle(double radius,int segments)
 {
@@ -300,9 +299,10 @@ void drawCanonHead(double radius, int slices, int stacks)
 	}
 }
 
+
 void drawShootingLine() {
 	glPushMatrix();
-	glColor3f(1, 0.64, 0);
+	glColor3f(1, 0, 0);
 	glBegin(GL_LINES);{
 		glVertex3f(gun_l.x, gun_l.y, gun_l.z);
 		glVertex3f(gun_l.x*500, gun_l.y*500, gun_l.z*500);
@@ -325,7 +325,7 @@ void shoot() {
 }
 
 void drawBulletShot() {
-	for (int i = 0; i < max_bullets; i++)
+	for (int i = 0; i < bullet_count; i++)
 	{
 		glPushMatrix();
 
@@ -338,38 +338,6 @@ void drawBulletShot() {
 	
 }
 
-void drawSS()
-{
-    glColor3f(1,0,0);
-    //drawSquare(20);
-    drawSphere(20, 24, 20);
-
-    glRotatef(angle,0,0,1);
-    glTranslatef(110,0,0);
-    glRotatef(2*angle,0,0,1);
-    glColor3f(0,1,0);
-    //drawSquare(15);
-    drawSphere(15, 24, 20);
-
-    glPushMatrix();
-    {
-        glRotatef(angle,0,0,1);
-        glTranslatef(60,0,0);
-        glRotatef(2*angle,0,0,1);
-        glColor3f(0,0,1);
-        //drawSquare(10);
-        drawSphere(10, 24, 20);
-    }
-    glPopMatrix();
-
-    glRotatef(3*angle,0,0,1);
-    glTranslatef(40,0,0);
-    glRotatef(4*angle,0,0,1);
-    glColor3f(1,1,0);
-    //drawSquare(5);
-    drawSphere(5, 24, 20);
-}
-
 void drawStuff() {
     glPushMatrix();
 
@@ -377,9 +345,8 @@ void drawStuff() {
     drawHalfSphere(40, 40, 40, false);
     
 	glRotatef(e_angle, 1, 0, 0);
-
+	drawHalfSphere(40, 40, 40, true);
     //drawSphere(40, 40, 40);
-    drawHalfSphere(40, 40, 40, true);
     
 	glTranslatef(0, 40, 0);
     glRotatef(a_angle, 1, 0, 0);
@@ -394,8 +361,7 @@ void drawStuff() {
 
     glPopMatrix();
     
-	//total stuff 170 unit
-	drawShootingLine();
+	//drawShootingLine();
 
 	glPushMatrix();
 
@@ -406,6 +372,19 @@ void drawStuff() {
     glPopMatrix();
 
 	drawBulletShot();
+}
+
+void reset_pos() {
+    pos = {100, 100, 25};
+	u = {0, 0, 1};
+	r = {-1.0/sqrt(2), 1.0/sqrt(2), 0};
+	l = {-1.0/sqrt(2), -1.0/sqrt(2), 0};
+
+	gun_l = {0, -1, 0};
+	q_angle = 0;
+	e_angle = 0;
+	a_angle = 0;
+	d_angle = 0;
 }
 
 void rotate_vector(struct point a, struct point b, double theta, int dir){
@@ -451,18 +430,6 @@ void rotate_vector(struct point a, struct point b, double theta, int dir){
 	}
 }
 
-void reset_pos() {
-    pos = {100, 100, 25};
-	u = {0, 0, 1};
-	r = {-1.0/sqrt(2), 1.0/sqrt(2), 0};
-	l = {-1.0/sqrt(2), -1.0/sqrt(2), 0};
-
-	gun_l = {0, -1, 0};
-	q_angle = 0;
-	e_angle = 0;
-	a_angle = 0;
-	d_angle = 0;
-}
 
 void keyboardListener(unsigned char key, int x,int y){
 	switch(key){
@@ -556,7 +523,6 @@ void keyboardListener(unsigned char key, int x,int y){
 	}
 }
 
-
 void specialKeyListener(int key, int x,int y){
 	switch(key){
 		case GLUT_KEY_DOWN:		//down arrow key
@@ -605,7 +571,6 @@ void specialKeyListener(int key, int x,int y){
 	}
 }
 
-
 void mouseListener(int button, int state, int x, int y){	//x, y is the x-y of the screen (2D)
 	switch(button){
 		case GLUT_LEFT_BUTTON:
@@ -629,8 +594,6 @@ void mouseListener(int button, int state, int x, int y){	//x, y is the x-y of th
 			break;
 	}
 }
-
-
 
 void display(){
 
@@ -671,12 +634,13 @@ void display(){
 	drawAxes();
 	drawGrid();
 
+	drawStuff();
+
     //glColor3f(1,0,0);
     //drawSquare(10);
 
     //drawSS();
-    drawStuff();
-
+    
     //drawCircle(30,24);
 
     //drawCone(20,50,24);
@@ -689,7 +653,6 @@ void display(){
 	//ADD this line in the end --- if you use double buffer (i.e. GL_DOUBLE)
 	glutSwapBuffers();
 }
-
 
 void animate(){
 	angle+=0.05;
@@ -705,7 +668,7 @@ void init(){
 	cameraAngle=1.0;
 	angle=0;
 	rotate_angle=pi/10.0;
-	angle_inc = 5;
+	angle_inc = 3;
 
 	pos = {100, 100, 50};
 	u = {0, 0, 1};
@@ -720,7 +683,7 @@ void init(){
 	d_angle = 0;
 
 	bullet_count = 0;
-	max_bullets = 25;
+	max_bullets = 100;
 
 
 	//clear the screen
