@@ -24,6 +24,14 @@ double a_angle;
 double d_angle;
 double angle_inc;
 
+double plane_dist;
+double plane_len;
+
+double big_rad;
+double small_rad;
+double cylinder_len;
+double header_len;
+
 struct point
 {
 	double x,y,z;
@@ -43,14 +51,14 @@ void drawAxes()
 	{
 		glColor3f(1.0, 1.0, 1.0);
 		glBegin(GL_LINES);{
-			glVertex3f( 500,0,0);
-			glVertex3f(-500,0,0);
+			glVertex3f( 700,0,0);
+			glVertex3f(-700,0,0);
 
-			glVertex3f(0,-500,0);
-			glVertex3f(0, 500,0);
+			glVertex3f(0,-700,0);
+			glVertex3f(0, 700,0);
 
-			glVertex3f(0,0, 500);
-			glVertex3f(0,0,-500);
+			glVertex3f(0,0, 700);
+			glVertex3f(0,0,-700);
 		}glEnd();
 	}
 }
@@ -305,16 +313,16 @@ void drawShootingLine() {
 	glColor3f(1, 0, 0);
 	glBegin(GL_LINES);{
 		glVertex3f(gun_l.x, gun_l.y, gun_l.z);
-		glVertex3f(gun_l.x*500, gun_l.y*500, gun_l.z*500);
+		glVertex3f(gun_l.x*700, gun_l.y*700, gun_l.z*700);
 	}glEnd();
 	glPopMatrix();
 }
 
 void shoot() {
-	double t = 400/gun_l.y;
+	double t = plane_dist/gun_l.y;
 	struct point c = {gun_l.x*t, gun_l.y*t, gun_l.z*t};
 	
-	if((c.x <= 200 && c.x >= -200) && (c.z <= 200 && c.z >= -200)) {
+	if((c.x < plane_len && c.x > -plane_len) && (c.z < plane_len && c.z > -plane_len)) {
 		printf("hit\n");
 		//printf("c: %f, %f, %f\n", c.x, c.y, c.z);
 		bullets[(bullet_count++)%max_bullets] = {c.x, c.y-5, c.z};
@@ -342,22 +350,22 @@ void drawStuff() {
     glPushMatrix();
 
     glRotatef(q_angle, 0, 0, 1);
-    drawHalfSphere(40, 40, 40, false);
+    drawHalfSphere(big_rad, 40, 40, false);
     
 	glRotatef(e_angle, 1, 0, 0);
-	drawHalfSphere(40, 40, 40, true);
-    //drawSphere(40, 40, 40);
+	drawHalfSphere(big_rad, 40, 40, true);
+    //drawSphere(big_rad, 40, 40);
     
-	glTranslatef(0, 40, 0);
+	glTranslatef(0, big_rad, 0);
     glRotatef(a_angle, 1, 0, 0);
     glRotatef(d_angle, 0, 1, 0);
     
-	glTranslatef(0, 10, 0);
-	drawHalfSphere(10, 40, 40, false);
-    drawCylinder(10, 40, 100);
+	glTranslatef(0, small_rad, 0);
+	drawHalfSphere(small_rad, 40, 40, false);
+    drawCylinder(small_rad, 40, cylinder_len);
 
-    glTranslatef(0, 100, 0);
-    drawCanonHead(10, 40, 20);
+    glTranslatef(0, cylinder_len, 0);
+    drawCanonHead(small_rad, 40, header_len);
 
     glPopMatrix();
     
@@ -365,9 +373,9 @@ void drawStuff() {
 
 	glPushMatrix();
 
-    glTranslatef(0, 400, 0);
+    glTranslatef(0, plane_dist, 0);
     glColor3f(0.5, 0.5, 0.5);
-    drawSquare(200);
+    drawSquare(plane_len);
 
     glPopMatrix();
 
@@ -668,9 +676,9 @@ void init(){
 	cameraAngle=1.0;
 	angle=0;
 	rotate_angle=pi/10.0;
-	angle_inc = 3;
+	angle_inc = 2;
 
-	pos = {100, 100, 50};
+	pos = {200, 150, 50};
 	u = {0, 0, 1};
 	r = {-1.0/sqrt(2), 1.0/sqrt(2), 0};
 	l = {-1.0/sqrt(2), -1.0/sqrt(2), 0};
@@ -685,6 +693,13 @@ void init(){
 	bullet_count = 0;
 	max_bullets = 100;
 
+	plane_dist = 500;
+	plane_len = 250;
+
+	big_rad = 40;
+	small_rad = 10;
+	cylinder_len = 100;
+	header_len = 20;
 
 	//clear the screen
 	glClearColor(0,0,0,0);

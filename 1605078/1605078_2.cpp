@@ -52,6 +52,7 @@ void drawAxes()
 	}
 }
 
+
 void drawGrid()
 {
 	int i;
@@ -93,6 +94,7 @@ void drawSquare(double a)
 		glVertex3f( a, a,2);
 	}glEnd();
 }
+
 
 void drawCircle(double radius,int segments)
 {
@@ -145,6 +147,7 @@ void drawCone(double radius,double height,int segments)
         glEnd();
     }
 }
+
 
 void drawSphere(double radius,int slices,int stacks)
 {
@@ -238,7 +241,7 @@ void circleCollisionDetect() {
 				if (d1 >= (2*bubble_rad) && d2 <= (2*bubble_rad)) {
                     double unit;
 					struct point c = {positions[i].x - positions[j].x, positions[i].y - positions[j].y, 0};
-					//double unit = sqrt(c.x*c.x + c.y*c.y + c.z*c.z);
+					unit = sqrt(c.x*c.x + c.y*c.y + c.z*c.z);
 
 					/*velocity[i].x = c.x/unit;
 					velocity[i].y = c.y/unit;
@@ -246,15 +249,15 @@ void circleCollisionDetect() {
 					velocity[j].x = -c.x/unit;
 					velocity[j].y = -c.y/unit;*/
 
-					velocity[i].x += c.x;
-					velocity[i].y += c.y;
+					velocity[i].x += c.x/unit;
+					velocity[i].y += c.y/unit;
 
 					unit = sqrt(velocity[i].x*velocity[i].x + velocity[i].y*velocity[i].y + velocity[i].z*velocity[i].z);
 					velocity[i].x /= unit;
 					velocity[i].y /= unit;
 
-					velocity[j].x -= c.x;
-					velocity[j].y -= c.y;
+					velocity[j].x -= c.x/unit;
+					velocity[j].y -= c.y/unit;
 
 					unit = sqrt(velocity[j].x*velocity[j].x + velocity[j].y*velocity[j].y + velocity[j].z*velocity[j].z);
 					velocity[j].x /= unit;
@@ -271,19 +274,17 @@ void boundaryCheckCircle() {
 	{
 		if (hitCircle(i))
 		{
-			double dot = velocity[i].x*positions[i].x + velocity[i].y*positions[i].y;
-
-			double vx = velocity[i].x - 2*dot*positions[i].x;
-			double vy = velocity[i].y - 2*dot*positions[i].y;
-			double unit = sqrt(vx*vx + vy*vy);
-			vx /= unit;
-			vy /= unit;
-
-			velocity[i].x = vx;
-			velocity[i].y = vy;
+			double unit = sqrt(positions[i].x*positions[i].x + positions[i].y*positions[i].y);
+			double dot = velocity[i].x*(positions[i].x/unit) + velocity[i].y*(positions[i].y/unit);
+			
+			double vx = velocity[i].x - 2*dot*(positions[i].x/unit);
+			double vy = velocity[i].y - 2*dot*(positions[i].y/unit);
+			
+			unit = sqrt(vx*vx + vy*vy);
+			velocity[i].x = vx/unit;
+			velocity[i].y = vy/unit;
 		}
 	}
-
 }
 
 void drawBubble(struct point c) {
@@ -318,6 +319,7 @@ void keyboardListener(unsigned char key, int x,int y){
 			break;
 	}
 }
+
 
 void specialKeyListener(int key, int x,int y){
 	switch(key){
@@ -357,6 +359,7 @@ void specialKeyListener(int key, int x,int y){
 	}
 }
 
+
 void mouseListener(int button, int state, int x, int y){	//x, y is the x-y of the screen (2D)
 	switch(button){
 		case GLUT_LEFT_BUTTON:
@@ -375,6 +378,7 @@ void mouseListener(int button, int state, int x, int y){	//x, y is the x-y of th
 			break;
 	}
 }
+
 
 void display(){
 
@@ -433,6 +437,7 @@ void display(){
 	glutSwapBuffers();
 }
 
+
 void animate(){
 	angle+=0.05;
 
@@ -490,6 +495,7 @@ void init(){
 		
 		velocity[i] = {vx, vy, 0};
 		printf("vx, vy: %f, %f\n", vx, vy);
+
 	}
 
 
